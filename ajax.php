@@ -6,12 +6,10 @@ require_once('db_conn.php');
 if($_SERVER['REQUEST_METHOD'] == 'GET') {
 
     if($_GET['method'] == 'list') {
-        $sql = 'SELECT products.*, cart.quantity as cart_quantity from products join cart on products.id=cart.product_id';
-
+        $sql = 'SELECT products.*, cart.quantity as cart_quantity from products join cart on products.id=cart.products_id';
         $products = $db->prepare($sql);
         $products->execute();
         $productsArray = $products->fetchAll();
-
         $html = '';
         foreach($productsArray as $product) {
             $html .= '
@@ -66,7 +64,7 @@ if($_SERVER['REQUEST_METHOD'] == 'GET') {
 
         $id = $db->lastInsertId();
 
-        $sql_cart = 'INSERT INTO cart (product_id, quantity) VALUES (:id, 0)';
+        $sql_cart = 'INSERT INTO cart (products_id, quantity) VALUES (:id, 0)';
         $cart = $db->prepare($sql_cart);
         $cart->bindParam(':id', $id);
         $cart->execute();
@@ -79,7 +77,7 @@ if($_SERVER['REQUEST_METHOD'] == 'GET') {
         $product->bindParam('id', $_POST['id']);
         $product->execute();
 
-        $sql_cart = 'delete from cart where product_id = :id limit 1';
+        $sql_cart = 'delete from cart where products_id = :id limit 1';
         $cart = $db->prepare($sql_cart);
         $cart->bindParam('id', $_POST['id']);
         $cart->execute();
@@ -97,7 +95,7 @@ if($_SERVER['REQUEST_METHOD'] == 'GET') {
 
         echo 'success';
     } else if($_POST['method'] == 'cart') {
-        $sqlCheck = 'select * from cart where product_id=:id';
+        $sqlCheck = 'select * from cart where products_id=:id';
         $productCheck = $db->prepare($sqlCheck);
         $productCheck->bindParam(':id', $_POST['id']);
         $productCheck->execute();
@@ -107,23 +105,22 @@ if($_SERVER['REQUEST_METHOD'] == 'GET') {
         if(count($check) > 0) {
             $quantity = $check[0]['quantity'];
             $quantity+=1;
-            $sql = 'UPDATE cart set quantity=:quantity where product_id=:id';
+            $sql = 'UPDATE cart set quantity=:quantity where products_id=:id';
             $product = $db->prepare($sql);
             $product->bindParam(':quantity', $quantity);
             $product->bindParam(':id', $_POST['id']);
             $product->execute();
         } else {
-            $sql = 'insert into cart (product_id, quantity) values (:id, 1)';
+            $sql = 'insert into cart (products_id, quantity) values (:id, 1)';
             $product = $db->prepare($sql);
             $product->bindParam(':id', $_POST['id']);
             $product->execute();
         }
     } else if($_POST['method'] == 'checkout') {
 
-        $prod = $db->prepare('SELECT products.*, cart.quantity as cart_q FROM products join cart on products.id = cart.product_id where cart.quantity > 0');
+        $prod = $db->prepare('SELECT products.*, cart.quantity as cart_q FROM products join cart on products.id = cart.products_id where cart.quantity > 0');
         $prod->execute();
         $products = $prod->fetchAll();
-var_dump($products);
         foreach ($products as $product) {
             $new_quantity = $product['quantity'] - $product['cart_q'];
             $update_product = 'UPDATE products SET quantity=:q where id=:id';
@@ -132,7 +129,7 @@ var_dump($products);
             $prod->bindParam(':id', $product['id']);
             $prod->execute();
 
-            $update_cart = 'UPDATE cart SET quantity=0 where product_id=:id';
+            $update_cart = 'UPDATE cart SET quantity=0 where products_id=:id';
             $cart = $db->prepare($update_cart);
             $cart->bindParam(':id', $product['id']);
             $cart->execute();
@@ -142,6 +139,3 @@ var_dump($products);
     }
 
 }
-
-
-?>
